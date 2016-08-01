@@ -3,6 +3,7 @@ import random
 import string
 import sys
 import getpass
+import os
 class Scramble_unit:
     first = 0
     second = 0
@@ -128,6 +129,43 @@ def decryptFile(filename, key):
     for l in lines:
         fw.write(decrypt(l,key_to_len(key,len(l))))
     fw.close()
+def split(filename):
+    fr = open(filename, 'r')
+    lines = fr.readlines()
+    fw = open(filename, 'w')
+    fw.close()
+    os.remove(filename)
+    result_lines = []
+    key_lines = []
+    for line in lines:
+        key = rankey(len(line))
+        result = encrypt(line, key)
+        result_lines.append(result)
+        key_lines.append(key)
+    rf = open('R{}'.format(filename), 'w')
+    for rl in result_lines:
+        rf.write(rl)
+    rf.close()
+    kf = open('K{}'.format(filename), 'w')
+    for kl in key_lines:
+        kf.write('{}\n'.format(kl))
+    kf.close()
+    print 'R{} and K{} files created.'.format(filename,filename)
+    print 'You will need them both to retrieve the original file.'
+def join(rf, kf):
+    rr = open(rf, 'r')
+    rlines = rr.readlines()
+    rr.close()
+    kr = open(kf, 'r')
+    klines = kr.readlines()
+    kr.close()
+    os.remove(rf)
+    os.remove(kf)
+    fw = open(rf[1:],'w')
+    for i in range(0, len(rlines)):
+        fw.write(decrypt(rlines[i], klines[i]))
+    fw.close()
+    print '{} file created.'.format(rf[1:])
 args = sys.argv
 if len(args) == 1:
     help()
@@ -181,7 +219,19 @@ elif args[1] == '-df':
         f = raw_input('Filename: ')
         k = getpass.getpass()
         decryptFile(f, k)
-
+elif args[1] == '-s':
+    if len(args) == 3:
+        split(args[2])
+    else:
+        filename = raw_input('filename: ')
+        split(filename)
+elif args[1] == '-j':
+    if len(args) == 4:
+        join(args[2], args[3])
+    else:
+        result_file = raw_input('result file: ')
+        key_file = raw_input('key file: ')
+        join(result_file,key_file)
 else:
     help()
 
