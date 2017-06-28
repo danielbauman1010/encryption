@@ -5,12 +5,15 @@ import sys
 import getpass
 import os
 successful_decrypted_message = "<<<Successful file decrypt>>>"
+#a "unit" that has 2 locations to be swapped(1,2)
 class Scramble_unit:
     first = 0
     second = 0
     def __init__(self, first,second):
         self.first = first
         self.second = second
+
+#a pattern(an ordered list) of scramble units
 class Scramble_patt:
     locations = {}
     counter = 0
@@ -20,6 +23,8 @@ class Scramble_patt:
     def add(self, scrambleUnit):
         self.locations[self.counter] = scrambleUnit
         self.counter = self.counter + 1
+
+#a function that takes a message and a scramble pattern and scrambles it.
 def scramble(message, pattern):
     result = list(message)
     for i in range(0,len(pattern.locations)):
@@ -28,22 +33,56 @@ def scramble(message, pattern):
         result[scrambleUnit.first] = result[scrambleUnit.second]
         result[scrambleUnit.second] = t
     return "".join(result)
+
+#a function that reverses the scramble function
 def descramble(message,pattern):
     result = list(message)
     for i in range(len(pattern.locations)-1,-1,-1):
         scrambleUnit = pattern.locations[i]
-        t = result[scrambleUnit.first]
-        result[scrambleUnit.first] = result[scrambleUnit.second]
-        result[scrambleUnit.second] = t
+        t = result[scrambleUnit.second]
+        result[scrambleUnit.second] = result[scrambleUnit.first]
+        result[scrambleUnit.first] = t
     return "".join(result)
+
+#generate a random scramble pattern not larger than the limit(string length)
 def randomSP(limit):
     sp = Scramble_patt()
     for i in range(0,randint(1,limit)):
         su = Scramble_unit((randint(1,limit)-1), (randint(1,limit)-1))
         sp.add(su)
     return sp
+
+#prints a scramble unit
 def printsu(scramunit):
     print '({},{})'.format(scramunit.first,scramunit.second)
+def printsp(scrampat):
+    for i in range(0,len(scrampat.locations)):
+        printsu(scrampat.locations[i])
+def prop(scrampat,limit):
+    max = 0
+    for i in range(0, len(scrampat.locations)):
+        if scrampat.locations[i].first>max:
+            max = scrampat.locations[i].first
+        if scrampat.locations[i].second>max:
+            max = scrampat.locations[i].second
+    if max>limit:
+        div = int(max/limit)+1
+        proppat = Scramble_patt()
+        for i in range(0,len(scrampat.locations)):
+            proppat.add(Scramble_unit(int(scrampat.locations[i].first/div),int(scrampat.locations[i].second/div)))
+        return proppat
+    return scrampat
+
+def key_to_sp(key,limit):
+    counter = 0
+    askey = []
+    for c in list(key):
+        askey.append(ord(c))
+    scp = Scramble_patt()
+    while counter < len(askey)-1:
+        scp.add(Scramble_unit(askey[counter], askey[counter+1]))
+        counter = counter + 2
+    return prop(scp,limit)
 def key_to_len(key, length):
     good_len_key = ''
     x = 0
@@ -57,7 +96,9 @@ def encrypt(mess,key):
     enmess = ''
     for i in range(0,len(mess)):
         enmess += addChars(list(mess)[i],list(key)[i])
-    return enmess
+    sp = key_to_sp(key,len(enmess))
+    senmess = scramble(enmess,sp)
+    return senmess
 def addChars(a,b):
     if a == '\n':
         return a
@@ -70,6 +111,8 @@ def addChars(a,b):
     return a
 def decrypt(mess,key):
     demess = ''
+    sp = key_to_sp(key,len(mess))
+    mess = descramble(mess,sp)
     for i in range(0,len(mess)):
         demess += subChars(list(mess)[i],list(key)[i])
     return demess
